@@ -23,6 +23,15 @@ set_sockaddr(struct sockaddr_in* addr, int fam, int s_addr, uint16_t port) {
 
 //-------------------------------------------------------------------
 
+struct socks_reply new_socks_reply(enum socks_stat stat) {
+	struct socks_reply r;
+	r.ver = 0;
+	r.stat = stat;
+	return r;
+}
+
+//-------------------------------------------------------------------
+
 void server_init(server* s, int sock, struct sockaddr_in addr) {
 	s->sock = sock;
 	s->addr = addr;

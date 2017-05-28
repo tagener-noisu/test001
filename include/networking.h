@@ -19,6 +19,23 @@ client* client_new();
 
 //-------------------------------------------------------------------
 
+enum socks_stat {
+	GRANTED = 0x5A,
+	REJECTED,
+	OTHER1,
+	OTHER2
+};
+
+struct socks_reply {
+	uint8_t ver;
+	uint8_t stat;
+	uint8_t pad[6];
+};
+
+struct socks_reply new_socks_reply(enum socks_stat stat);
+
+//-------------------------------------------------------------------
+
 int setnonblock(int d);
 
 void
