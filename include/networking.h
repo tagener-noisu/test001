@@ -21,15 +21,27 @@ client* client_new();
 
 enum socks_stat {
 	GRANTED = 0x5A,
-	REJECTED,
-	OTHER1,
-	OTHER2
+	REJECTED = 0x5B,
+	OTHER1 = 0x5C,
+	OTHER2 = 0x5D
+};
+
+enum socks_comm {
+	STREAM_CON = 0x1,
+	PORT_BIND = 0x2,
 };
 
 struct socks_reply {
 	uint8_t ver;
 	uint8_t stat;
 	uint8_t pad[6];
+};
+
+struct sock_request {
+	uint8_t ver;
+	uint8_t comm;
+	uint16_t port;
+	uint32_t ipv4;
 };
 
 struct socks_reply new_socks_reply(enum socks_stat stat);
