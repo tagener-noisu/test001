@@ -37,7 +37,7 @@ struct socks_reply {
 	uint8_t pad[6];
 };
 
-struct sock_request {
+struct socks_request {
 	uint8_t ver;
 	uint8_t comm;
 	uint16_t port;
