@@ -34,7 +34,8 @@ enum socks_comm {
 struct socks_reply {
 	uint8_t ver;
 	uint8_t stat;
-	uint8_t pad[6];
+	uint16_t port;
+	uint32_t ipv4;
 };
 
 struct socks_request {
@@ -44,7 +45,8 @@ struct socks_request {
 	uint32_t ipv4;
 };
 
-struct socks_reply new_socks_reply(enum socks_stat stat);
+struct socks_reply
+new_socks_reply(enum socks_stat stat, uint32_t ipv4, uint16_t port);
 
 //-------------------------------------------------------------------
 
