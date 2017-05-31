@@ -41,6 +41,6 @@ int server_loop() {
 int main() {
 	int stat = server_loop();
 	if (stat != 0)
-		fprintf(stderr, "Error: %s", strerror(errno));
+		fprintf(stderr, "Error: %s\n", strerror(errno));
 	return stat;
 }
