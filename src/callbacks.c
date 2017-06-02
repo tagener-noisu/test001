@@ -6,13 +6,30 @@
 #include "networking.h"
 //-------------------------------------------------------------------
 
-void send_cb (struct ev_loop *loop, ev_io *w, int revents) {
+void client_cb (struct ev_loop *loop, ev_io *w, int revents) {
 	int stat;
-	static char* http_ok = "HTTP/1.1 200 OK\r\n\r\n";
 	client* cli = (client*) w;
-	stat = send(cli->sock, http_ok, strlen(http_ok), 0);
+	struct socks_request r;
+
+	stat = recv(cli->sock, &r, sizeof(r), 0);
+	shutdown(cli->sock, SHUT_RD);
+	if (stat != -1 && r.ver == 4) {
+		struct in_addr ip;
+		struct socks_reply repl;
+
+		ip.s_addr = r.ipv4;
+		fprintf(stderr, "REQUEST(%x), host: %s:%u\n",
+			r.comm,
+			inet_ntoa(ip),
+			ntohs(r.port)
+		);
+
+		repl = new_socks_reply(GRANTED, r.ipv4, r.port);
+		stat = send(cli->sock, &repl, sizeof(repl), 0);
+	}
+
 	if (stat == -1)
-		fprintf(stderr, "Error: send(), %s\n", strerror(errno));
+		fprintf(stderr, "Error: client_cb(), %s\n", strerror(errno));
 
 	close(cli->sock);
 	ev_io_stop(loop, w);
@@ -32,7 +49,7 @@ void accept_cb (struct ev_loop *loop, ev_io *w, int revents) {
 
 	if (sock != -1) {
 		setnonblock(sock);
-		client* cli = client_new();
+		client* cli = client_new(client_cb);
 		cli->sock = sock;
 		cli->addr = addr;
 
