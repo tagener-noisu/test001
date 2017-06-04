@@ -85,4 +85,9 @@ void accept_cb (struct ev_loop *loop, ev_io *w, int revents) {
 	close(sock);
 }
 
+void sigint_cb(struct ev_loop *loop, ev_signal *w, int revents) {
+	ev_break(loop, EVBREAK_ALL);
+	fprintf(stderr, "Interrupt\n");
+}
+
 //-------------------------------------------------------------------

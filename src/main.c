@@ -1,6 +1,7 @@
 #include <ev.h>
 #include <stdio.h>
 #include <errno.h>
+#include <unistd.h>
 
 #include "networking.h"
 #include "callbacks.h"
@@ -32,9 +33,15 @@ int server_loop() {
 	ev_io_init(&serv.io, accept_cb, serv.sock, EV_READ);
 	ev_io_start(loop, &serv.io);
 
+	// interrupt handler
+	ev_signal int_handler;
+	ev_signal_init(&int_handler, sigint_cb, SIGINT);
+	ev_signal_start(loop, &int_handler);
+
 	ev_run(loop, 0);
 
 	ev_loop_destroy(loop);
+	close(sock);
 	return 0;
 }
 
