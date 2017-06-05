@@ -32,7 +32,7 @@ void client_cb (struct ev_loop *loop, ev_io *w, int revents) {
 			buf
 		);
 
-		repl = new_socks_reply(GRANTED, r.ipv4, r.port);
+		repl = socks_reply_new(GRANTED, r.ipv4, r.port);
 		stat = send(cli->sock, &repl, sizeof(repl), 0);
 	}
 

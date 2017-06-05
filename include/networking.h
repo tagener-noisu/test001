@@ -46,7 +46,7 @@ struct socks_request {
 };
 
 struct socks_reply
-new_socks_reply(enum socks_stat stat, uint32_t ipv4, uint16_t port);
+socks_reply_new(enum socks_stat stat, uint32_t ipv4, uint16_t port);
 
 //-------------------------------------------------------------------
 
