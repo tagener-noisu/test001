@@ -1,7 +1,6 @@
 #include <fcntl.h>
 #include <stdlib.h>
 #include "networking.h"
-#include "callbacks.h"
 //-------------------------------------------------------------------
 
 int setnonblock(int d) {
@@ -10,7 +9,7 @@ int setnonblock(int d) {
 		return flags;
 	flags |= O_NONBLOCK;
 
-	return fcntl(d, F_SETFD, flags);
+	return fcntl(d, F_SETFL, flags);
 }
 
 void
