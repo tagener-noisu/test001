@@ -21,8 +21,6 @@ int connect_to_host(uint32_t ipv4, uint16_t port) {
 	if (sock == -1)
 		return sock;
 
-	setnonblock(sock);
-
 	if (connect(sock, (struct sockaddr *)&host, sizeof(host)) == -1)
 		return -1;
 
@@ -37,6 +35,9 @@ void client_cb (struct ev_loop *loop, ev_io *w, int revents) {
 	int host;
 
 	stat = recv(cli->sock, &r, sizeof(r), 0);
+	if (stat == -1 && errno == EAGAIN)
+		return;
+
 	if (stat != -1 && r.ver == 4) {
 		struct in_addr ip;
 		struct socks_reply repl;
