@@ -8,12 +8,9 @@
 struct context {
 	ev_io io;
 	int sock;
-	struct sockaddr_in addr;
 };
 typedef struct context server;
 typedef struct context client;
-
-void server_init(server* s, int sock, struct sockaddr_in addr);
 
 client* client_new();
 

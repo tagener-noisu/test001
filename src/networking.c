@@ -34,11 +34,6 @@ socks_reply_new(enum socks_stat stat, uint32_t ipv4, uint16_t port) {
 
 //-------------------------------------------------------------------
 
-void server_init(server* s, int sock, struct sockaddr_in addr) {
-	s->sock = sock;
-	s->addr = addr;
-}
-
 client* client_new(void (*callback)(EV_P_ ev_io *, int)) {
 	client* cli = (client*) malloc(sizeof(client));
 	memset(cli, 0, sizeof(client));

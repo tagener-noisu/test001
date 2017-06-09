@@ -27,7 +27,7 @@ int server_loop() {
 		return stat;
 
 	listen(sock, 0);
-	server_init(&serv, sock, addr);
+	serv.sock = sock;
 
 	struct ev_loop *loop = EV_DEFAULT;
 	ev_io_init(&serv.io, accept_cb, serv.sock, EV_READ);

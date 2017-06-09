@@ -96,14 +96,13 @@ void accept_cb (struct ev_loop *loop, ev_io *w, int revents) {
 		setnonblock(sock);
 		client* cli = client_new(client_cb);
 		cli->sock = sock;
-		cli->addr = addr;
 
 		ev_io_start(loop, &cli->io);
 
 		fprintf(stderr,
 			"Connection from: %s:%u\n",
-			inet_ntoa(cli->addr.sin_addr),
-			ntohs(cli->addr.sin_port));
+			inet_ntoa(addr.sin_addr),
+			ntohs(addr.sin_port));
 		return;
 	}
 
