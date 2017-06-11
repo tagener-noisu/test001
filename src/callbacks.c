@@ -9,30 +9,11 @@ enum {
 	SMALL_BUF = 2048
 };
 
-int connect_to_host(uint32_t ipv4, uint16_t port) {
-	int sock;
-	struct sockaddr_in host;
-
-	host.sin_family = AF_INET;
-	host.sin_addr.s_addr = ipv4;
-	host.sin_port = port;
-
-	sock = socket(AF_INET, SOCK_STREAM, 0);
-	if (sock == -1)
-		return sock;
-
-	if (connect(sock, (struct sockaddr *)&host, sizeof(host)) == -1)
-		return -1;
-
-	return sock;
-}
-
 void client_cb (struct ev_loop *loop, ev_io *w, int revents) {
 	int stat;
 	client* cli = (client*) w;
 	struct socks_request r;
 	char buf[SMALL_BUF];
-	int host;
 
 	stat = recv(cli->sock, &r, sizeof(r), 0);
 	if (stat == -1 && errno == EAGAIN)
@@ -54,13 +35,7 @@ void client_cb (struct ev_loop *loop, ev_io *w, int revents) {
 			buf
 		);
 
-		host = connect_to_host(r.ipv4, r.port);
-		if (host == -1)
-			repl = socks_reply_new(REJECTED, r.ipv4, r.port);
-		else
-			repl = socks_reply_new(GRANTED, r.ipv4, r.port);
-
-		close(host);
+		repl = socks_reply_new(GRANTED, r.ipv4, r.port);
 		stat = send(cli->sock, &repl, sizeof(repl), 0);
 	}
 
