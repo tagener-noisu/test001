@@ -2,29 +2,54 @@
 #include <stdio.h>
 #include <errno.h>
 #include <unistd.h>
+#include <netdb.h>
 
 #include "networking.h"
 #include "callbacks.h"
+#include "error.h"
 //-------------------------------------------------------------------
+
+#define PORT "133"
+
+int bind_locally() {
+	int stat, sock;
+	struct addrinfo hints;
+	struct addrinfo *list, *p;
+
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_family = AF_UNSPEC;
+	hints.ai_socktype = SOCK_STREAM;
+	hints.ai_flags = AI_PASSIVE;
+
+	stat = getaddrinfo(NULL, PORT, &hints, &list);
+	if (stat != 0)
+		return stat;
+
+	for (p = list; p != NULL; p = p->ai_next) {
+		sock = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
+		if (sock != -1) {
+			stat = bind(sock, p->ai_addr, p->ai_addrlen);
+			if (stat == 0)
+				return sock; // SUCCESS
+		}
+		close(sock);
+	}
+	freeaddrinfo(list);
+
+	if (sock == -1)
+		return sock;
+	return stat;
+}
 
 int server_loop() {
 	server serv;
 	int sock;
-	int stat;
-	struct sockaddr_in addr;
 
-	sock = socket(AF_INET, SOCK_STREAM, 0);
+	sock = bind_locally();
 	if (sock == -1)
 		return sock;
 
-	stat = setnonblock(sock);
-	if (stat == -1)
-		return stat;
-
-	set_sockaddr(&addr, AF_INET, INADDR_ANY, 1337);
-	stat = bind(sock, (struct sockaddr*)&addr, sizeof(addr));
-	if (stat != 0)
-		return stat;
+	setnonblock(sock);
 
 	listen(sock, 0);
 	serv.sock = sock;
@@ -48,6 +73,6 @@ int server_loop() {
 int main() {
 	int stat = server_loop();
 	if (stat != 0)
-		fprintf(stderr, "Error: %s\n", strerror(errno));
+		error();
 	return stat;
 }
