@@ -13,26 +13,18 @@ void client_cb (struct ev_loop *loop, ev_io *w, int revents) {
 	int stat;
 	client* cli = (client*) w;
 	struct socks_request r;
-	char buf[SMALL_BUF];
 
 	stat = recv(cli->sock, &r, sizeof(r), 0);
-	if (stat == -1 && errno == EAGAIN)
-		return;
-
+	shutdown(cli->sock, SHUT_RD);
 	if (stat != -1 && r.ver == 4) {
 		struct in_addr ip;
 		struct socks_reply repl;
 
-		stat = recv(cli->sock, buf, SMALL_BUF, 0);
-		shutdown(cli->sock, SHUT_RD);
-		buf[SMALL_BUF - 1] = 0;
-
 		ip.s_addr = r.ipv4;
-		fprintf(stderr, "REQUEST(%x), host: %s:%u, id: %s\n",
+		fprintf(stderr, "REQUEST(%x), host: %s:%u\n",
 			r.comm,
 			inet_ntoa(ip),
-			ntohs(r.port),
-			buf
+			ntohs(r.port)
 		);
 
 		repl = socks_reply_new(GRANTED, r.ipv4, r.port);
@@ -41,15 +33,6 @@ void client_cb (struct ev_loop *loop, ev_io *w, int revents) {
 
 	if (stat == -1)
 		fprintf(stderr, "Error: client_cb(), %s\n", strerror(errno));
-
-	shutdown(cli->sock, SHUT_RDWR);
-	stat = recv(cli->sock, buf, SMALL_BUF, 0);
-	if (stat == -1)
-		fprintf(stderr,
-			"Error: recv() waiting FIN, %s", strerror(errno));
-	else if (stat > 0)
-		fprintf(stderr,
-			"Error: recv() waiting FIN, trailing data.");
 
 	close(cli->sock);
 	ev_io_stop(loop, w);
