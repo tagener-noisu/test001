@@ -9,7 +9,7 @@
 #include "error.h"
 //-------------------------------------------------------------------
 
-#define PORT "133"
+#define PORT "1337"
 
 int bind_locally() {
 	int stat, sock;

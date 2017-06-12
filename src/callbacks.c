@@ -15,6 +15,10 @@ void client_cb (struct ev_loop *loop, ev_io *w, int revents) {
 	struct socks_request r;
 
 	stat = recv(cli->sock, &r, sizeof(r), 0);
+
+	if (stat == -1 && errno == EAGAIN)
+		return;
+
 	shutdown(cli->sock, SHUT_RD);
 	if (stat != -1 && r.ver == 4) {
 		struct in_addr ip;
@@ -34,6 +38,7 @@ void client_cb (struct ev_loop *loop, ev_io *w, int revents) {
 	if (stat == -1)
 		fprintf(stderr, "Error: client_cb(), %s\n", strerror(errno));
 
+	fprintf(stderr, "Connection closed.\n");
 	close(cli->sock);
 	ev_io_stop(loop, w);
 	free(cli);
