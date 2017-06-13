@@ -31,7 +31,7 @@ void client_cb (struct ev_loop *loop, ev_io *w, int revents) {
 			ntohs(r.port)
 		);
 
-		repl = socks_reply_new(GRANTED, r.ipv4, r.port);
+		repl = socks_reply_new(REJECTED, r.ipv4, r.port);
 		stat = send(cli->sock, &repl, sizeof(repl), 0);
 	}
 
