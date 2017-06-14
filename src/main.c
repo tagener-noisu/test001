@@ -30,7 +30,7 @@ int bind_locally() {
 		if (sock != -1) {
 			stat = bind(sock, p->ai_addr, p->ai_addrlen);
 			if (stat == 0)
-				return sock; // SUCCESS
+				break; // SUCCESS
 		}
 		close(sock);
 	}
@@ -38,7 +38,11 @@ int bind_locally() {
 
 	if (sock == -1)
 		return sock;
-	return stat;
+
+	if (stat == -1)
+		return stat;
+
+	return sock;
 }
 
 int server_loop() {
