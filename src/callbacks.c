@@ -9,10 +9,19 @@ enum {
 	SMALL_BUF = 2048
 };
 
-void client_cb (struct ev_loop *loop, ev_io *w, int revents) {
+int blocking_recv(int sock, void *buf, size_t sz, int flags) {
+	int len;
+	do {
+		len = recv(sock, buf, sz, flags);
+	} while (len == -1 && errno == EAGAIN);
+
+	return len;
+}
+
+void socks_request_cb(struct ev_loop *loop, ev_io *w, int revents) {
 	int stat;
-	client* cli = (client*) w;
 	struct socks_request r;
+	client* cli = (client*) w;
 
 	stat = recv(cli->sock, &r, sizeof(r), 0);
 
@@ -23,20 +32,29 @@ void client_cb (struct ev_loop *loop, ev_io *w, int revents) {
 	if (stat != -1 && r.ver == 4) {
 		struct in_addr ip;
 		struct socks_reply repl;
+		char buf[SMALL_BUF];
 
-		ip.s_addr = r.ipv4;
-		fprintf(stderr, "REQUEST(%x), host: %s:%u\n",
-			r.comm,
-			inet_ntoa(ip),
-			ntohs(r.port)
-		);
+		stat = blocking_recv(cli->sock, buf, sizeof(buf), MSG_WAITALL);
+		if (stat != -1) {
+			buf[stat - 1] = '\0';
 
-		repl = socks_reply_new(REJECTED, r.ipv4, r.port);
-		stat = send(cli->sock, &repl, sizeof(repl), 0);
+			ip.s_addr = r.ipv4;
+			fprintf(stderr, "REQUEST(%x), host: %s:%u, from: %s\n",
+				r.comm,
+				inet_ntoa(ip),
+				ntohs(r.port),
+				buf
+			);
+
+			repl = socks_reply_new(REJECTED, r.ipv4, r.port);
+			stat = send(cli->sock, &repl, sizeof(repl), 0);
+		}
 	}
 
 	if (stat == -1)
-		fprintf(stderr, "Error: client_cb(), %s\n", strerror(errno));
+		fprintf(stderr,
+			"Error: socks_request_cb(), %s\n",
+			strerror(errno));
 
 	fprintf(stderr, "Connection closed.\n");
 	close(cli->sock);
@@ -57,7 +75,7 @@ void accept_cb (struct ev_loop *loop, ev_io *w, int revents) {
 
 	if (sock != -1) {
 		setnonblock(sock);
-		client* cli = client_new(client_cb);
+		client* cli = client_new(socks_request_cb);
 		cli->sock = sock;
 
 		ev_io_start(loop, &cli->io);
