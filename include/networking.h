@@ -3,6 +3,7 @@
 #include <ev.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#include <stdio.h>
 //-------------------------------------------------------------------
 
 struct context {
@@ -51,5 +52,7 @@ int setnonblock(int d);
 
 void
 set_sockaddr(struct sockaddr_in* addr, int fam, int s_addr, uint16_t port);
+
+void print_addr(FILE *f, int af, const void *addr);
 
 //-------------------------------------------------------------------
