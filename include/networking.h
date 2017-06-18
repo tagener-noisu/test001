@@ -50,9 +50,6 @@ socks_reply_new(enum socks_stat stat, uint32_t ipv4, uint16_t port);
 
 int setnonblock(int d);
 
-void
-set_sockaddr(struct sockaddr_in* addr, int fam, int s_addr, uint16_t port);
-
 void print_addr(FILE *f, int af, const void *addr);
 
 //-------------------------------------------------------------------

@@ -12,14 +12,6 @@ int setnonblock(int d) {
 	return fcntl(d, F_SETFL, flags);
 }
 
-void
-set_sockaddr(struct sockaddr_in* addr, int fam, int s_addr, uint16_t port) {
-	memset(addr, 0, sizeof(struct sockaddr_in));
-	addr->sin_family = fam;
-	addr->sin_addr.s_addr = s_addr;
-	addr->sin_port = htons(port);
-}
-
 void print_addr(FILE *f, int af, const void *addr) {
 	char buf[INET6_ADDRSTRLEN];
 	const char *ip = NULL;
