@@ -18,12 +18,12 @@ void print_addr(FILE *f, int af, const void *addr) {
 	uint16_t port = 0;
 
 	if (af == AF_INET) {
-		struct sockaddr_in *addr_in = (struct sockaddr_in *)&addr;
+		struct sockaddr_in *addr_in = (struct sockaddr_in *) addr;
 		ip = inet_ntop(af, &addr_in->sin_addr, buf, sizeof(buf));
 		port = ntohs(((struct sockaddr_in *)addr)->sin_port);
 	}
 	else if (af == AF_INET6) {
-		struct sockaddr_in6 *addr_in6 = (struct sockaddr_in6 *)&addr;
+		struct sockaddr_in6 *addr_in6 = (struct sockaddr_in6 *) addr;
 		ip = inet_ntop(af, &addr_in6->sin6_addr, buf, sizeof(buf));
 		port = ntohs(((struct sockaddr_in6 *)addr)->sin6_port);
 	}
