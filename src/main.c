@@ -28,6 +28,15 @@ int bind_locally() {
 	for (p = list; p != NULL; p = p->ai_next) {
 		sock = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
 		if (sock != -1) {
+			int reuse = 1;
+
+			setsockopt(
+				sock,
+				SOL_SOCKET,
+				SO_REUSEADDR,
+				&reuse,
+				sizeof(reuse));
+
 			stat = bind(sock, p->ai_addr, p->ai_addrlen);
 			if (stat == 0)
 				break; // SUCCESS
