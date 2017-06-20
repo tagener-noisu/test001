@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <arpa/inet.h>
 #include "callbacks.h"
 #include "networking.h"
 //-------------------------------------------------------------------
@@ -30,21 +31,22 @@ void socks_request_cb(struct ev_loop *loop, ev_io *w, int revents) {
 
 	shutdown(cli->sock, SHUT_RD);
 	if (stat != -1 && r.ver == 4) {
-		struct in_addr ip;
 		struct socks_reply repl;
 		char buf[SMALL_BUF];
 
 		stat = blocking_recv(cli->sock, buf, sizeof(buf), MSG_WAITALL);
 		if (stat != -1) {
+			struct sockaddr_in host;
+			memset(&host, 0, sizeof(host));
+			host.sin_family = AF_INET;
+			host.sin_addr.s_addr = r.ipv4;
+			host.sin_port = r.port;
+
 			buf[stat - 1] = '\0';
 
-			ip.s_addr = r.ipv4;
-			fprintf(stderr, "REQUEST(%x), host: %s:%u, from: %s\n",
-				r.comm,
-				inet_ntoa(ip),
-				ntohs(r.port),
-				buf
-			);
+			fprintf(stderr, "SOCKS REQUEST(%x), host: ", r.comm);
+			print_addr(stderr, AF_INET, &host);
+			fprintf(stderr, ", from: %s\n", buf);
 
 			repl = socks_reply_new(REJECTED, r.ipv4, r.port);
 			stat = send(cli->sock, &repl, sizeof(repl), 0);
@@ -64,9 +66,9 @@ void socks_request_cb(struct ev_loop *loop, ev_io *w, int revents) {
 
 void accept_cb (struct ev_loop *loop, ev_io *w, int revents) {
 	int sock;
-	struct sockaddr_in addr;
+	struct sockaddr_storage addr;
+	int addrsz = sizeof(addr);
 	server* serv = (server*) w;
-	int addrsz = sizeof(struct sockaddr_in);
 
 	sock = accept(
 		serv->sock,
@@ -80,10 +82,9 @@ void accept_cb (struct ev_loop *loop, ev_io *w, int revents) {
 
 		ev_io_start(loop, &cli->io);
 
-		fprintf(stderr,
-			"Connection from: %s:%u\n",
-			inet_ntoa(addr.sin_addr),
-			ntohs(addr.sin_port));
+		fprintf(stderr, "Connection from: ");
+		print_addr(stderr, addr.ss_family, &addr);
+		putc('\n', stderr);
 		return;
 	}
 
