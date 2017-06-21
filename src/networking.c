@@ -1,5 +1,6 @@
 #include <fcntl.h>
 #include <stdlib.h>
+#include <errno.h>
 #include "networking.h"
 //-------------------------------------------------------------------
 
@@ -30,6 +31,15 @@ void print_addr(FILE *f, int af, const void *addr) {
 
 	if (ip != NULL)
 		fprintf(f, "%s:%u", ip, port);
+}
+
+int blocking_recv(int sock, void *buf, size_t sz, int flags) {
+	int len;
+	do {
+		len = recv(sock, buf, sz, flags);
+	} while (len == -1 && errno == EAGAIN);
+
+	return len;
 }
 
 //-------------------------------------------------------------------

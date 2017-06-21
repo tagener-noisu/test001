@@ -52,4 +52,6 @@ int setnonblock(int d);
 
 void print_addr(FILE *f, int af, const void *addr);
 
+int blocking_recv(int sock, void *buf, size_t sz, int flags);
+
 //-------------------------------------------------------------------

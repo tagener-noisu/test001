@@ -10,15 +10,6 @@ enum {
 	SMALL_BUF = 2048
 };
 
-int blocking_recv(int sock, void *buf, size_t sz, int flags) {
-	int len;
-	do {
-		len = recv(sock, buf, sz, flags);
-	} while (len == -1 && errno == EAGAIN);
-
-	return len;
-}
-
 void socks_request_cb(struct ev_loop *loop, ev_io *w, int revents) {
 	int stat;
 	struct socks_request r;
