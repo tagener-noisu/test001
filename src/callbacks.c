@@ -77,8 +77,6 @@ void accept_cb (struct ev_loop *loop, ev_io *w, int revents) {
 	}
 
 	fprintf(stderr, "Error in accept(); %s\n", strerror(errno));
-	ev_io_stop(loop, w);
-	ev_break(loop, EVBREAK_ALL);
 	close(sock);
 }
 
