@@ -6,9 +6,6 @@
 #include "callbacks.h"
 #include "networking.h"
 //-------------------------------------------------------------------
-enum {
-	SMALL_BUF = 2048
-};
 
 void socks_request_cb(struct ev_loop *loop, ev_io *w, int revents) {
 	int stat;
