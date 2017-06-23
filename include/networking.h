@@ -18,7 +18,13 @@ struct context {
 	int sock;
 };
 typedef struct context server;
-typedef struct context client;
+
+struct client_ctx {
+	ev_io io;
+	int sock;
+	void *data;
+};
+typedef struct client_ctx client;
 
 client* client_new();
 
