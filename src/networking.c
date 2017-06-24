@@ -54,13 +54,10 @@ socks_reply_new(enum socks_stat stat, uint32_t ipv4, uint16_t port) {
 	return r;
 }
 
-//-------------------------------------------------------------------
-
-client* client_new(void (*callback)(EV_P_ ev_io *, int)) {
-	client* cli = (client*) malloc(sizeof(client));
-	memset(cli, 0, sizeof(client));
-	ev_io_init(&cli->io, callback, cli->sock, EV_WRITE);
-	return cli;
+session * session_new() {
+	session * s = (session *) malloc(sizeof(session));
+	memset(s, 0, sizeof(session));
+	return s;
 }
 
 //-------------------------------------------------------------------

@@ -13,23 +13,6 @@ enum {
 
 //-------------------------------------------------------------------
 
-struct context {
-	ev_io io;
-	int sock;
-};
-typedef struct context server;
-
-struct client_ctx {
-	ev_io io;
-	int sock;
-	void *data;
-};
-typedef struct client_ctx client;
-
-client* client_new();
-
-//-------------------------------------------------------------------
-
 enum socks_stat {
 	GRANTED = 0x5A,
 	REJECTED = 0x5B,
@@ -57,7 +40,26 @@ struct socks_request {
 };
 
 struct socks_reply
+
 socks_reply_new(enum socks_stat stat, uint32_t ipv4, uint16_t port);
+
+//-------------------------------------------------------------------
+
+struct context {
+	ev_io io;
+	int sock;
+	struct sockaddr_storage addr;
+};
+typedef struct context server;
+typedef struct context client;
+
+typedef struct {
+	struct context client;
+	struct context host;
+	struct socks_request req;
+} session;
+
+session * session_new();
 
 //-------------------------------------------------------------------
 
