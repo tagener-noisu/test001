@@ -8,14 +8,15 @@
 #include "networking.h"
 //-------------------------------------------------------------------
 
-void connect_to_host_cb(struct ev_loop *loop, ev_io *w, int revents) {
-	int sock;
-	client* cli = (client*) w;
-	sock = socket(AF_INET, SOCK_STREAM, 0);
+void connect_to_host(session *s) {
+	int sock = socket(AF_INET, SOCK_STREAM, 0);
+	s->host.sock = sock;
 
 	if (sock != -1) {
 		int stat;
-		struct sockaddr_in * addr = cli->data;
+		struct sockaddr_in * addr =
+			(struct sockaddr_in *) &s->host.addr;
+
 		struct socks_reply repl = socks_reply_new(
 			REJECTED,
 			addr->sin_addr.s_addr,
@@ -32,50 +33,46 @@ void connect_to_host_cb(struct ev_loop *loop, ev_io *w, int revents) {
 		else if (stat == -1)
 			error();
 
-		stat = send(cli->sock, &repl, sizeof(repl), 0);
-		free(addr);
+		stat = send(s->client.sock, &repl, sizeof(repl), 0);
 	}
 
-	ev_io_stop(loop, w);
+	close(s->client.sock);
 	close(sock);
-	close(cli->sock);
-	free(cli);
-	ev_break(loop, EVBREAK_ALL);
+	free(s);
 }
 
 void socks_request_cb(struct ev_loop *loop, ev_io *w, int revents) {
 	int stat;
 	struct socks_request r;
-	client* cli = (client*) w;
+	session *s = (session *) w;
+	int sock = s->client.sock;
 
-	stat = recv(cli->sock, &r, sizeof(r), 0);
-
+	stat = recv(sock, &r, sizeof(r), 0);
 	if (stat == -1 && errno == EAGAIN)
 		return;
 
 	if (stat != -1 && r.ver == 4) {
-		char buf[SMALL_BUF];
+		char userid[SMALL_BUF];
 
-		stat = blocking_recv(cli->sock, buf, sizeof(buf), MSG_WAITALL);
+		stat = blocking_recv(sock, userid, sizeof(userid), MSG_WAITALL);
 		if (stat != -1) {
 			struct sockaddr_in *host =
-				malloc(sizeof(struct sockaddr_in));
+				(struct sockaddr_in *) &s->host.addr;
+
+			userid[stat - 1] = '\0';
 
 			memset(host, 0, sizeof(struct sockaddr_in));
 			host->sin_family = AF_INET;
 			host->sin_addr.s_addr = r.ipv4;
 			host->sin_port = r.port;
 
-			buf[stat - 1] = '\0';
-
 			fprintf(stderr, "SOCKS REQUEST(%x), host: ", r.comm);
 			print_addr(stderr, AF_INET, host);
-			fprintf(stderr, ", from: %s\n", buf);
+			fprintf(stderr, ", from: %s\n", userid);
 
-			cli->data = host;
-			ev_io_stop(loop, w);
-			ev_init(w, connect_to_host_cb);
-			ev_io_start(loop, w);
+			ev_io_stop(loop, &s->client.io);
+			connect_to_host(s);
+			ev_break(loop, EVBREAK_ALL);
 			return;
 		}
 	}
@@ -86,37 +83,41 @@ void socks_request_cb(struct ev_loop *loop, ev_io *w, int revents) {
 			strerror(errno));
 
 	fprintf(stderr, "Connection closed.\n");
-	close(cli->sock);
+	close(sock);
 	ev_io_stop(loop, w);
-	free(cli);
+	free(s);
 }
 
 void accept_cb (struct ev_loop *loop, ev_io *w, int revents) {
-	int sock;
-	struct sockaddr_storage addr;
-	int addrsz = sizeof(addr);
+	session *s = session_new();
+	client *client = &s->client;
+	int addrsz = sizeof(client->addr);
 	server* serv = (server*) w;
 
-	sock = accept(
+	client->sock = accept(
 		serv->sock,
-		(struct sockaddr*)&addr,
+		(struct sockaddr*) &client->addr,
 		(socklen_t*)&addrsz);
 
-	if (sock != -1) {
-		setnonblock(sock);
-		client* cli = client_new(socks_request_cb);
-		cli->sock = sock;
+	if (client->sock != -1) {
+		setnonblock(client->sock);
 
-		ev_io_start(loop, &cli->io);
+		ev_io_init(
+			&client->io,
+			socks_request_cb,
+			client->sock,
+			EV_READ);
+		ev_io_start(loop, &client->io);
 
 		fprintf(stderr, "Connection from: ");
-		print_addr(stderr, addr.ss_family, &addr);
+		print_addr(stderr, client->addr.ss_family, &client->addr);
 		putc('\n', stderr);
 		return;
 	}
 
 	fprintf(stderr, "Error in accept(); %s\n", strerror(errno));
-	close(sock);
+	close(client->sock);
+	free(s);
 }
 
 void sigint_cb(struct ev_loop *loop, ev_signal *w, int revents) {
