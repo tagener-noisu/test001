@@ -8,7 +8,29 @@
 #include "networking.h"
 //-------------------------------------------------------------------
 
-void connect_to_host(session *s) {
+void socks_resp_cb(struct ev_loop *loop, ev_io *w, int revents) {
+	int stat;
+	session *s = (session *) w;
+	client *client = &s->client;
+	struct socks_reply *reply = s->data;
+
+	stat = send(client->sock, reply, sizeof(struct socks_reply), 0);
+	if (stat != -1) {
+		fprintf(stderr, "SOCKS RESPONSE sent\n");
+	}
+	else if (errno == EAGAIN) {
+		return;
+	}
+
+	ev_io_stop(loop, &s->client.io);
+	close(s->client.sock);
+	close(s->host.sock);
+	if (reply != NULL)
+		free(reply);
+	free(s);
+}
+
+void connect_to_host(session *s, struct ev_loop *loop) {
 	int sock = socket(AF_INET, SOCK_STREAM, 0);
 	s->host.sock = sock;
 
@@ -17,10 +39,12 @@ void connect_to_host(session *s) {
 		struct sockaddr_in * addr =
 			(struct sockaddr_in *) &s->host.addr;
 
-		struct socks_reply repl = socks_reply_new(
-			REJECTED,
-			addr->sin_addr.s_addr,
-			addr->sin_port);
+		struct socks_reply *repl = malloc(sizeof(struct socks_reply));
+		repl->ver = 0;
+		repl->stat = REJECTED;
+		repl->port = addr->sin_port;
+		repl->ipv4 = addr->sin_addr.s_addr;
+		s->data = repl;
 
 		//setnonblock(sock);
 		stat = connect(
@@ -29,11 +53,18 @@ void connect_to_host(session *s) {
 			sizeof(struct sockaddr_in));
 
 		if (stat == 0)
-			repl.stat = GRANTED;
+			repl->stat = GRANTED;
 		else if (stat == -1)
 			error();
 
-		stat = send(s->client.sock, &repl, sizeof(repl), 0);
+		ev_io_stop(loop, &s->client.io);
+		ev_io_init(
+			&s->client.io,
+			socks_resp_cb,
+			s->client.sock,
+			EV_WRITE);
+		ev_io_start(loop, &s->client.io);
+		return;
 	}
 
 	close(s->client.sock);
@@ -71,8 +102,7 @@ void socks_request_cb(struct ev_loop *loop, ev_io *w, int revents) {
 			fprintf(stderr, ", from: %s\n", userid);
 
 			ev_io_stop(loop, &s->client.io);
-			connect_to_host(s);
-			ev_break(loop, EVBREAK_ALL);
+			connect_to_host(s, loop);
 			return;
 		}
 	}
