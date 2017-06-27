@@ -26,7 +26,7 @@ void socks_resp_cb(struct ev_loop *loop, ev_io *w, int revents) {
 	close(s->client.sock);
 	close(s->host.sock);
 	if (reply != NULL)
-		free(reply);
+	free(reply);
 	free(s);
 }
 
