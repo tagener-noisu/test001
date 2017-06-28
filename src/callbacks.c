@@ -8,6 +8,31 @@
 #include "networking.h"
 //-------------------------------------------------------------------
 
+void client_to_host_cb(struct ev_loop *loop, ev_io *w, int revents) {
+	int len_recv;
+	session *s = (session *) w;
+	client *client = &s->client;
+	host *host = &s->host;
+	char buf[LARGE_BUF];
+
+	len_recv = recv(client->sock, buf, sizeof(buf), 0);
+	if (len_recv != -1) {
+		int total_sent = 0;
+		while (total_sent < len_recv) {
+			int sent = send(host->sock, buf, len_recv, 0);
+			if (sent == -1) {
+				if (errno == EAGAIN)
+					continue;
+				else
+					break;
+			}
+			total_sent += sent;
+		}
+		if (total_sent < len_recv)
+			error();
+	}
+}
+
 void socks_resp_cb(struct ev_loop *loop, ev_io *w, int revents) {
 	int stat;
 	session *s = (session *) w;
@@ -17,6 +42,10 @@ void socks_resp_cb(struct ev_loop *loop, ev_io *w, int revents) {
 	stat = send(client->sock, reply, sizeof(struct socks_reply), 0);
 	if (stat != -1) {
 		fprintf(stderr, "SOCKS RESPONSE sent\n");
+		ev_io_stop(loop, &client->io);
+		ev_io_init(&client->io, client_to_host_cb, client->sock, EV_READ);
+		ev_io_start(loop, &client->io);
+		return;
 	}
 	else if (errno == EAGAIN) {
 		return;
@@ -85,8 +114,10 @@ void socks_request_cb(struct ev_loop *loop, ev_io *w, int revents) {
 	if (stat != -1 && r.ver == 4) {
 		char userid[SMALL_BUF];
 
-		stat = blocking_recv(sock, userid, sizeof(userid), MSG_WAITALL);
+		stat = blocking_recv(sock, userid, sizeof(userid), MSG_PEEK);
 		if (stat != -1) {
+			int id_len = strlen(userid);
+			blocking_recv(sock, userid, id_len + 1, MSG_WAITALL);
 			struct sockaddr_in *host =
 				(struct sockaddr_in *) &s->host.addr;
 
