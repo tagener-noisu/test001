@@ -8,7 +8,7 @@
 
 enum {
 	SMALL_BUF = 2048,
-	LARGE_BUF = 4096
+	LARGE_BUF = 8192
 };
 
 //-------------------------------------------------------------------
@@ -52,6 +52,7 @@ struct context {
 };
 typedef struct context server;
 typedef struct context client;
+typedef struct context host;
 
 typedef struct {
 	struct context client;
