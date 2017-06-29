@@ -10,12 +10,13 @@
 
 void client_to_host_cb(struct ev_loop *loop, ev_io *w, int revents) {
 	int len_recv;
-	session *s = (session *) w;
-	client *client = &s->client;
+	client *c = (client *) w;
+	session *s = c->io.data;
+
 	host *host = &s->host;
 	char buf[LARGE_BUF];
 
-	len_recv = recv(client->sock, buf, sizeof(buf), 0);
+	len_recv = recv(c->sock, buf, sizeof(buf), 0);
 	if (len_recv != -1) {
 		int total_sent = 0;
 		while (total_sent < len_recv) {
@@ -35,24 +36,24 @@ void client_to_host_cb(struct ev_loop *loop, ev_io *w, int revents) {
 
 void socks_resp_cb(struct ev_loop *loop, ev_io *w, int revents) {
 	int stat;
-	session *s = (session *) w;
-	client *client = &s->client;
+	client *c = (client *) w;
+	session *s = c->io.data;
 	struct socks_reply *reply = s->data;
 
-	stat = send(client->sock, reply, sizeof(struct socks_reply), 0);
+	stat = send(c->sock, reply, sizeof(struct socks_reply), 0);
 	if (stat != -1) {
 		fprintf(stderr, "SOCKS RESPONSE sent\n");
-		ev_io_stop(loop, &client->io);
-		ev_io_init(&client->io, client_to_host_cb, client->sock, EV_READ);
-		ev_io_start(loop, &client->io);
+		ev_io_stop(loop, &c->io);
+		ev_io_init(&c->io, client_to_host_cb, c->sock, EV_READ);
+		ev_io_start(loop, &c->io);
 		return;
 	}
 	else if (errno == EAGAIN) {
 		return;
 	}
 
-	ev_io_stop(loop, &s->client.io);
-	close(s->client.sock);
+	ev_io_stop(loop, &c->io);
+	close(c->sock);
 	close(s->host.sock);
 	if (reply != NULL)
 	free(reply);
@@ -104,20 +105,20 @@ void connect_to_host(session *s, struct ev_loop *loop) {
 void socks_request_cb(struct ev_loop *loop, ev_io *w, int revents) {
 	int stat;
 	struct socks_request r;
-	session *s = (session *) w;
-	int sock = s->client.sock;
+	client *c = (client *) w;
+	session *s = c->io.data;
 
-	stat = recv(sock, &r, sizeof(r), 0);
+	stat = recv(c->sock, &r, sizeof(r), 0);
 	if (stat == -1 && errno == EAGAIN)
 		return;
 
 	if (stat != -1 && r.ver == 4) {
 		char userid[SMALL_BUF];
 
-		stat = blocking_recv(sock, userid, sizeof(userid), MSG_PEEK);
+		stat = blocking_recv(c->sock, userid, sizeof(userid), MSG_PEEK);
 		if (stat != -1) {
 			int id_len = strlen(userid);
-			blocking_recv(sock, userid, id_len + 1, MSG_WAITALL);
+			blocking_recv(c->sock, userid, id_len + 1, MSG_WAITALL);
 			struct sockaddr_in *host =
 				(struct sockaddr_in *) &s->host.addr;
 
@@ -132,7 +133,7 @@ void socks_request_cb(struct ev_loop *loop, ev_io *w, int revents) {
 			print_addr(stderr, AF_INET, host);
 			fprintf(stderr, ", from: %s\n", userid);
 
-			ev_io_stop(loop, &s->client.io);
+			ev_io_stop(loop, &c->io);
 			connect_to_host(s, loop);
 			return;
 		}
@@ -144,7 +145,7 @@ void socks_request_cb(struct ev_loop *loop, ev_io *w, int revents) {
 			strerror(errno));
 
 	fprintf(stderr, "Connection closed.\n");
-	close(sock);
+	close(c->sock);
 	ev_io_stop(loop, w);
 	free(s);
 }
@@ -168,6 +169,7 @@ void accept_cb (struct ev_loop *loop, ev_io *w, int revents) {
 			socks_request_cb,
 			client->sock,
 			EV_READ);
+		client->io.data = s;
 		ev_io_start(loop, &client->io);
 
 		fprintf(stderr, "Connection from: ");
