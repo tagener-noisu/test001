@@ -63,6 +63,8 @@ typedef struct {
 
 session * session_new();
 
+void delete_session(session *);
+
 //-------------------------------------------------------------------
 
 int setnonblock(int d);

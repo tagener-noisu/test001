@@ -1,7 +1,8 @@
+#include "networking.h"
 #include <fcntl.h>
 #include <stdlib.h>
 #include <errno.h>
-#include "networking.h"
+#include <unistd.h>
 //-------------------------------------------------------------------
 
 int setnonblock(int d) {
@@ -58,6 +59,14 @@ session * session_new() {
 	session * s = (session *) malloc(sizeof(session));
 	memset(s, 0, sizeof(session));
 	return s;
+}
+
+void delete_session(session * s) {
+	close(s->client.sock);
+	close(s->host.sock);
+	if (s->data != NULL)
+		free(s->data);
+	free(s);
 }
 
 //-------------------------------------------------------------------
