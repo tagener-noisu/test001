@@ -24,34 +24,38 @@ int send_data(int from, int to) {
 }
 
 void host_to_client_cb(struct ev_loop *loop, ev_io *w, int revents) {
+	int stat;
 	host *h = (host *) w;
 	session *s = h->io.data;
 
-	if (send_data(s->host.sock, s->client.sock) < 1) {
-		if (errno == EAGAIN)
-			return;
-		else {
-			error();
-			ev_io_stop(loop, &s->client.io);
-			ev_io_stop(loop, &s->host.io);
-			delete_session(s);
+	if ((stat = send_data(s->host.sock, s->client.sock)) < 1) {
+		if (stat == -1) {
+			if (errno == EAGAIN)
+				return;
+			else
+				error();
 		}
+		ev_io_stop(loop, &s->client.io);
+		ev_io_stop(loop, &s->host.io);
+		delete_session(s);
 	}
 }
 
 void client_to_host_cb(struct ev_loop *loop, ev_io *w, int revents) {
+	int stat;
 	client *c = (client *) w;
 	session *s = c->io.data;
 
-	if (send_data(s->client.sock, s->host.sock) < 1) {
-		if (errno == EAGAIN)
-			return;
-		else {
-			error();
-			ev_io_stop(loop, &s->client.io);
-			ev_io_stop(loop, &s->host.io);
-			delete_session(s);
+	if ((stat = send_data(s->client.sock, s->host.sock)) < 1) {
+		if (stat == -1) {
+			if (errno == EAGAIN)
+				return;
+			else
+				error();
 		}
+		ev_io_stop(loop, &s->client.io);
+		ev_io_stop(loop, &s->host.io);
+		delete_session(s);
 	}
 }
 
