@@ -184,37 +184,40 @@ void socks_request_cb(struct ev_loop *loop, ev_io *w, int revents) {
 }
 
 void accept_cb (struct ev_loop *loop, ev_io *w, int revents) {
-	session *s = session_new();
-	client *client = &s->client;
-	int addrsz = sizeof(client->addr);
 	server* serv = (server*) w;
 
-	client->sock = accept(
+	client client;
+	int addrsz = sizeof(client.addr);
+
+	client.sock = accept(
 		serv->sock,
-		(struct sockaddr*) &client->addr,
+		(struct sockaddr*) &client.addr,
 		(socklen_t*)&addrsz);
 
-	if (client->sock != -1) {
-		setnonblock(client->sock);
+	if (client.sock != -1) {
+		session *s = session_new();
+		s->client = client;
+
+		setnonblock(s->client.sock);
 
 		ev_io_init(
-			&client->io,
+			&s->client.io,
 			socks_request_cb,
-			client->sock,
+			s->client.sock,
 			EV_READ);
-		client->io.data = s;
+
+		s->client.io.data = s;
 		s->host.io.data = s;
-		ev_io_start(loop, &client->io);
+		ev_io_start(loop, &s->client.io);
 
 		fprintf(stderr, "Connection from: ");
-		print_addr(stderr, client->addr.ss_family, &client->addr);
+		print_addr(stderr, s->client.addr.ss_family, &s->client.addr);
 		putc('\n', stderr);
 		return;
 	}
 
 	fprintf(stderr, "Error in accept(); %s\n", strerror(errno));
-	close(client->sock);
-	free(s);
+	close(client.sock);
 }
 
 void sigint_cb(struct ev_loop *loop, ev_signal *w, int revents) {
