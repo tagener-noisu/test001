@@ -8,21 +8,6 @@
 #include "networking.h"
 //-------------------------------------------------------------------
 
-int send_data(int from, int to) {
-	char buf[LARGE_BUF];
-	int recvd = recv(from, buf, sizeof(buf), MSG_PEEK);
-
-	if (recvd > 0) {
-		int sent = send(to, buf, recvd, 0);
-		if (sent != -1)
-			recv(from, buf, sent, MSG_WAITALL);
-		else
-			return sent;
-	}
-
-	return recvd;
-}
-
 void host_to_client_cb(struct ev_loop *loop, ev_io *w, int revents) {
 	int stat;
 	host *h = (host *) w;

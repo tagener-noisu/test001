@@ -43,6 +43,21 @@ int blocking_recv(int sock, void *buf, size_t sz, int flags) {
 	return len;
 }
 
+int send_data(int from, int to) {
+	char buf[LARGE_BUF];
+	int recvd = recv(from, buf, sizeof(buf), MSG_PEEK);
+
+	if (recvd > 0) {
+		int sent = send(to, buf, recvd, 0);
+		if (sent != -1)
+			recv(from, buf, sent, MSG_WAITALL);
+		else
+			return sent;
+	}
+
+	return recvd;
+}
+
 //-------------------------------------------------------------------
 
 struct socks_reply
