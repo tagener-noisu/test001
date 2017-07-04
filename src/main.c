@@ -6,7 +6,7 @@
 
 #include "networking.h"
 #include "callbacks.h"
-#include "error.h"
+#include "log.h"
 //-------------------------------------------------------------------
 
 #define PORT "1337"
@@ -45,11 +45,15 @@ int bind_locally() {
 	}
 	freeaddrinfo(list);
 
-	if (sock == -1)
+	if (sock == -1) {
+		log_errno(__FILE__, __LINE__, errno);
 		return sock;
+	}
 
-	if (stat == -1)
+	if (stat == -1) {
+		log_errno(__FILE__, __LINE__, errno);
 		return stat;
+	}
 
 	return sock;
 }
@@ -85,7 +89,5 @@ int server_loop() {
 
 int main() {
 	int stat = server_loop();
-	if (stat != 0)
-		error();
 	return stat;
 }
