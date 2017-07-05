@@ -3,7 +3,7 @@ project(test)
 include(CTest)
 
 set(CMAKE_C_COMPILER clang)
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -Wall -Wunused -pedantic")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99 -g -Wall -Wunused -pedantic")
 
 include_directories(include)
 file(GLOB SOURCES "src/*.c")

@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <arpa/inet.h>
-#include "error.h"
+#include "log.h"
 #include "callbacks.h"
 #include "networking.h"
 //-------------------------------------------------------------------
@@ -18,7 +18,7 @@ void host_to_client_cb(struct ev_loop *loop, ev_io *w, int revents) {
 			if (errno == EAGAIN)
 				return;
 			else
-				error();
+				log_errno(__FILE__, __LINE__, errno);
 		}
 		ev_io_stop(loop, &s->client.io);
 		ev_io_stop(loop, &s->host.io);
@@ -36,7 +36,7 @@ void client_to_host_cb(struct ev_loop *loop, ev_io *w, int revents) {
 			if (errno == EAGAIN)
 				return;
 			else
-				error();
+				log_errno(__FILE__, __LINE__, errno);
 		}
 		ev_io_stop(loop, &s->client.io);
 		ev_io_stop(loop, &s->host.io);
@@ -99,7 +99,7 @@ void connect_to_host(session *s, struct ev_loop *loop) {
 		if (stat == 0)
 			repl->stat = GRANTED;
 		else if (stat == -1)
-			error();
+			log_errno(__FILE__, __LINE__, errno);
 
 		setnonblock(sock);
 		ev_io_stop(loop, &s->client.io);
