@@ -73,6 +73,8 @@ socks_reply_new(enum socks_stat stat, uint32_t ipv4, uint16_t port) {
 session * session_new() {
 	session * s = (session *) malloc(sizeof(session));
 	memset(s, 0, sizeof(session));
+	s->client.session = s;
+	s->host.session = s;
 	return s;
 }
 

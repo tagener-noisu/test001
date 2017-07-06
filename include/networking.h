@@ -49,12 +49,13 @@ struct context {
 	ev_io io;
 	int sock;
 	struct sockaddr_storage addr;
+	struct session *session;
 };
 typedef struct context server;
 typedef struct context client;
 typedef struct context host;
 
-typedef struct {
+typedef struct session {
 	struct context client;
 	struct context host;
 	struct socks_request req;
