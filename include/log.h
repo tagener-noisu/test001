@@ -1,7 +1,7 @@
 #pragma once
 
 enum {
-	LOG_WARNING, LOG_ERROR
+	LOG_WARNING, LOG_ERROR, LOG
 };
 
 void log_msg(

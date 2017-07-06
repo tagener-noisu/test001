@@ -12,13 +12,15 @@ void log_msg(
 	const char *format,
 	...)
 {
-	const char* head = "[WW] %s:%u: ";
+	const char* head = "\e[0;32m%s:%u:\e[0m ";
 
 	va_list va;
 	va_start(va, format);
 
 	if (type == LOG_ERROR)
-		head = "\e[0;31m[EE] %s:%u: \e[0m";
+		head = "\e[1;31m[EE] %s:%u: \e[0m ";
+	else if (type == LOG_WARNING)
+		head = "\e[1;35m[WW] %s:%u:\e[0m ";
 
 	fprintf(stderr, head, filename, line);
 	vfprintf(stderr, format, va);
