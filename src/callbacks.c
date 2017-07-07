@@ -11,7 +11,7 @@
 void host_to_client_cb(struct ev_loop *loop, ev_io *w, int revents) {
 	int stat;
 	host *h = (host *) w;
-	session *s = h->io.data;
+	session *s = h->session;
 
 	if ((stat = send_data(s->host.sock, s->client.sock)) < 1) {
 		if (stat == -1) {
@@ -29,7 +29,7 @@ void host_to_client_cb(struct ev_loop *loop, ev_io *w, int revents) {
 void client_to_host_cb(struct ev_loop *loop, ev_io *w, int revents) {
 	int stat;
 	client *c = (client *) w;
-	session *s = c->io.data;
+	session *s = c->session;
 
 	if ((stat = send_data(s->client.sock, s->host.sock)) < 1) {
 		if (stat == -1) {
@@ -47,7 +47,7 @@ void client_to_host_cb(struct ev_loop *loop, ev_io *w, int revents) {
 void socks_resp_cb(struct ev_loop *loop, ev_io *w, int revents) {
 	int stat;
 	client *c = (client *) w;
-	session *s = c->io.data;
+	session *s = c->session;
 	host *h = &s->host;
 	struct socks_reply reply = *(struct socks_reply *)s->data;
 
@@ -124,7 +124,7 @@ void socks_request_cb(struct ev_loop *loop, ev_io *w, int revents) {
 	int stat;
 	struct socks_request r;
 	client *c = (client *) w;
-	session *s = c->io.data;
+	session *s = c->session;
 
 	stat = recv(c->sock, &r, sizeof(r), 0);
 	if (stat == -1 && errno == EAGAIN)
@@ -181,7 +181,8 @@ void accept_cb (struct ev_loop *loop, ev_io *w, int revents) {
 
 	if (client.sock != -1) {
 		session *s = session_new();
-		s->client = client;
+		s->client.sock = client.sock;
+		s->client.addr = client.addr;
 
 		setnonblock(s->client.sock);
 
@@ -191,8 +192,6 @@ void accept_cb (struct ev_loop *loop, ev_io *w, int revents) {
 			s->client.sock,
 			EV_READ);
 
-		s->client.io.data = s;
-		s->host.io.data = s;
 		ev_io_start(loop, &s->client.io);
 
 		fprintf(stderr, "Connection from: ");
