@@ -56,7 +56,8 @@ void socks_resp_cb(struct ev_loop *loop, ev_io *w, int revents) {
 
 	stat = send(c->sock, &reply, sizeof(struct socks_reply), 0);
 	if (stat != -1) {
-		fprintf(stderr, "SOCKS RESPONSE sent\n");
+		log_msg(LOG,
+			__FILE__, __LINE__, "SOCKS RESPONSE sent\n");
 		ev_io_stop(loop, &c->io);
 		ev_io_stop(loop, &c->io);
 		ev_io_init(&c->io, client_to_host_cb, c->sock, EV_READ);
@@ -147,7 +148,8 @@ void socks_request_cb(struct ev_loop *loop, ev_io *w, int revents) {
 			host->sin_addr.s_addr = r.ipv4;
 			host->sin_port = r.port;
 
-			fprintf(stderr, "SOCKS REQUEST(%x), host: ", r.comm);
+			log_msg(LOG, __FILE__, __LINE__,
+				"SOCKS REQUEST(%x), host: ", r.comm);
 			print_addr(stderr, AF_INET, host);
 			fprintf(stderr, ", from: %s\n", userid);
 
@@ -158,11 +160,9 @@ void socks_request_cb(struct ev_loop *loop, ev_io *w, int revents) {
 	}
 
 	if (stat == -1)
-		fprintf(stderr,
-			"Error: socks_request_cb(), %s\n",
-			strerror(errno));
+		log_errno(__FILE__, __LINE__, errno);
 
-	fprintf(stderr, "Connection closed.\n");
+	log_msg(LOG, __FILE__, __LINE__, "Connection closed.\n");
 	close(c->sock);
 	ev_io_stop(loop, w);
 	free(s);
@@ -194,19 +194,19 @@ void accept_cb (struct ev_loop *loop, ev_io *w, int revents) {
 
 		ev_io_start(loop, &s->client.io);
 
-		fprintf(stderr, "Connection from: ");
+		log_msg(LOG, __FILE__, __LINE__, "Connection from: ");
 		print_addr(stderr, s->client.addr.ss_family, &s->client.addr);
 		putc('\n', stderr);
 		return;
 	}
 
-	fprintf(stderr, "Error in accept(); %s\n", strerror(errno));
+	log_errno(__FILE__, __LINE__, errno);
 	close(client.sock);
 }
 
 void sigint_cb(struct ev_loop *loop, ev_signal *w, int revents) {
 	ev_break(loop, EVBREAK_ALL);
-	fprintf(stderr, "Interrupt\n");
+	log_msg(LOG_WARNING, __FILE__, __LINE__, "Interrupt\n");
 }
 
 //-------------------------------------------------------------------
