@@ -60,16 +60,6 @@ int send_data(int from, int to) {
 
 //-------------------------------------------------------------------
 
-struct socks_reply
-socks_reply_new(enum socks_stat stat, uint32_t ipv4, uint16_t port) {
-	struct socks_reply r;
-	r.ver = 0;
-	r.stat = stat;
-	r.ipv4 = ipv4;
-	r.port = port;
-	return r;
-}
-
 session * session_new() {
 	session * s = (session *) malloc(sizeof(session));
 	memset(s, 0, sizeof(session));
