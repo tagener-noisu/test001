@@ -6,6 +6,7 @@
 #include "log.h"
 #include "callbacks.h"
 #include "networking.h"
+#include "session.h"
 //-------------------------------------------------------------------
 
 void host_to_client_cb(struct ev_loop *loop, ev_io *w, int revents) {
