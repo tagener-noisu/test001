@@ -16,7 +16,6 @@ typedef struct context host;
 typedef struct session {
 	struct context client;
 	struct context host;
-	struct socks_request req;
 	void *data;
 } session;
 
