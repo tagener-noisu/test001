@@ -182,6 +182,7 @@ void accept_cb (struct ev_loop *loop, ev_io *w, int revents) {
 
 	if (client.sock != -1) {
 		session *s = session_new();
+		s->loop = loop;
 		s->client.sock = client.sock;
 		s->client.addr = client.addr;
 
