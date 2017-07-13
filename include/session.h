@@ -20,6 +20,7 @@ typedef struct context client;
 typedef struct context host;
 
 typedef struct session {
+	ev_cleanup cleanup;
 	struct context client;
 	struct context host;
 	struct ev_loop *loop;

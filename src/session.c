@@ -3,6 +3,8 @@
 #include "session.h"
 //-------------------------------------------------------------------
 
+void session_cleanup(struct ev_loop * l, ev_cleanup *c, int e);
+
 session * session_new() {
 	session * s = (session *) malloc(sizeof(session));
 	memset(s, 0, sizeof(session));
@@ -12,6 +14,10 @@ session * session_new() {
 
 	s->state = IDLE;
 	return s;
+}
+
+void session_cleanup(struct ev_loop * l, ev_cleanup *c, int e) {
+	delete_session((session *) c);
 }
 
 void delete_session(session * s) {

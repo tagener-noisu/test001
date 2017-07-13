@@ -195,6 +195,7 @@ void accept_cb (struct ev_loop *loop, ev_io *w, int revents) {
 			EV_READ);
 
 		ev_io_start(loop, &s->client.io);
+		ev_cleanup_start(loop, &s->cleanup);
 
 		log_msg(LOG, __FILE__, __LINE__, "Connection from: ");
 		print_addr(stderr, s->client.addr.ss_family, &s->client.addr);
