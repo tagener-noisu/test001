@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include "session.h"
+#include "callbacks.h"
 //-------------------------------------------------------------------
 
 void session_cleanup(struct ev_loop * l, ev_cleanup *c, int e);
@@ -8,10 +9,12 @@ void session_cleanup(struct ev_loop * l, ev_cleanup *c, int e);
 session * session_new() {
 	session * s = (session *) malloc(sizeof(session));
 	memset(s, 0, sizeof(session));
+
 	ev_cleanup_init(&s->cleanup, session_cleanup);
+	ev_cleanup_start(s->loop, &s->cleanup);
+
 	s->client.session = s;
 	s->host.session = s;
-
 	s->state = IDLE;
 	return s;
 }
