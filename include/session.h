@@ -32,6 +32,6 @@ session * session_new();
 
 void delete_session(session *);
 
-void session_set_state(session *, int state);
+void session_set_state(session *, int);
 
 //-------------------------------------------------------------------
