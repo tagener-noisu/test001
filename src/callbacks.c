@@ -181,20 +181,13 @@ void accept_cb (struct ev_loop *loop, ev_io *w, int revents) {
 		(socklen_t*)&addrsz);
 
 	if (client.sock != -1) {
-		session *s = session_new();
-		s->loop = loop;
+		session *s = session_new(loop);
 		s->client.sock = client.sock;
 		s->client.addr = client.addr;
 
 		setnonblock(s->client.sock);
 
-		ev_io_init(
-			&s->client.io,
-			socks_request_cb,
-			s->client.sock,
-			EV_READ);
-
-		ev_io_start(loop, &s->client.io);
+		session_set_state(s, SOCKS_REQ);
 
 		log_msg(LOG, __FILE__, __LINE__, "Connection from: ");
 		print_addr(stderr, s->client.addr.ss_family, &s->client.addr);
