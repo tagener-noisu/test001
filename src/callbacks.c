@@ -154,7 +154,6 @@ void socks_request_cb(struct ev_loop *loop, ev_io *w, int revents) {
 			print_addr(stderr, AF_INET, host);
 			fprintf(stderr, ", from: %s\n", userid);
 
-			ev_io_stop(loop, &c->io);
 			connect_to_host(s, loop);
 			return;
 		}
@@ -182,10 +181,9 @@ void accept_cb (struct ev_loop *loop, ev_io *w, int revents) {
 
 	if (client.sock != -1) {
 		session *s = session_new(loop);
+		setnonblock(client.sock);
 		s->client.sock = client.sock;
 		s->client.addr = client.addr;
-
-		setnonblock(s->client.sock);
 
 		session_set_state(s, SOCKS_REQ);
 
