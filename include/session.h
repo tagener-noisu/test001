@@ -7,6 +7,7 @@
 enum s_state {
 	IDLE,
 	SOCKS_REQ,
+	SOCKS_RESP,
 	SHUTDOWN
 };
 

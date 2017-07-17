@@ -47,6 +47,18 @@ void session_set_state(session *s, int state) {
 				EV_READ);
 			ev_io_start(s->loop, &s->client.io);
 			return;
+		case SOCKS_RESP:
+			ev_io_stop(s->loop, &s->client.io);
+			ev_io_init(
+				&s->client.io,
+				socks_resp_cb,
+				s->client.sock,
+				EV_WRITE);
+			ev_io_start(s->loop, &s->client.io);
+			return;
+		case SHUTDOWN:
+			delete_session(s);
+			return;
 	}
 }
 

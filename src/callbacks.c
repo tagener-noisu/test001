@@ -104,13 +104,7 @@ void connect_to_host(session *s, struct ev_loop *loop) {
 			log_errno(__FILE__, __LINE__, errno);
 
 		setnonblock(sock);
-		ev_io_stop(loop, &s->client.io);
-		ev_io_init(
-			&s->client.io,
-			socks_resp_cb,
-			s->client.sock,
-			EV_WRITE);
-		ev_io_start(loop, &s->client.io);
+		session_set_state(s, SOCKS_RESP);
 
 		if (stat != -1)
 			return;
