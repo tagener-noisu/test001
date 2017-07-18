@@ -21,9 +21,7 @@ void host_to_client_cb(struct ev_loop *loop, ev_io *w, int revents) {
 			else
 				log_errno(__FILE__, __LINE__, errno);
 		}
-		ev_io_stop(loop, &s->client.io);
-		ev_io_stop(loop, &s->host.io);
-		delete_session(s);
+		session_set_state(s, SHUTDOWN);
 	}
 }
 
@@ -39,9 +37,7 @@ void client_to_host_cb(struct ev_loop *loop, ev_io *w, int revents) {
 			else
 				log_errno(__FILE__, __LINE__, errno);
 		}
-		ev_io_stop(loop, &s->client.io);
-		ev_io_stop(loop, &s->host.io);
-		delete_session(s);
+		session_set_state(s, SHUTDOWN);
 	}
 }
 
@@ -71,10 +67,7 @@ void socks_resp_cb(struct ev_loop *loop, ev_io *w, int revents) {
 		return;
 	}
 
-	ev_io_stop(loop, &c->io);
-	close(c->sock);
-	close(s->host.sock);
-	free(s);
+	session_set_state(s, SHUTDOWN);
 }
 
 void connect_to_host(session *s, struct ev_loop *loop) {
@@ -110,10 +103,7 @@ void connect_to_host(session *s, struct ev_loop *loop) {
 			return;
 	}
 
-	ev_io_stop(loop, &s->client.io);
-	close(s->client.sock);
-	close(sock);
-	free(s);
+	session_set_state(s, SHUTDOWN);
 }
 
 void socks_request_cb(struct ev_loop *loop, ev_io *w, int revents) {
@@ -157,9 +147,7 @@ void socks_request_cb(struct ev_loop *loop, ev_io *w, int revents) {
 		log_errno(__FILE__, __LINE__, errno);
 
 	log_msg(LOG, __FILE__, __LINE__, "Connection closed.\n");
-	close(c->sock);
-	ev_io_stop(loop, w);
-	free(s);
+	session_set_state(s, SHUTDOWN);
 }
 
 void accept_cb (struct ev_loop *loop, ev_io *w, int revents) {
