@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include "session.h"
 #include "callbacks.h"
+#include "log.h"
 //-------------------------------------------------------------------
 
 void session_cleanup(struct ev_loop *l, ev_cleanup *c, int e);
@@ -56,7 +57,24 @@ void session_set_state(session *s, int state) {
 				EV_WRITE);
 			ev_io_start(s->loop, &s->client.io);
 			return;
+		case SOCKS_COMM:
+			ev_io_stop(s->loop, &s->client.io);
+			ev_io_stop(s->loop, &s->host.io);
+			ev_io_init(
+				&s->client.io,
+				client_to_host_cb,
+				s->client.sock,
+				EV_READ);
+			ev_io_init(
+				&s->host.io,
+				host_to_client_cb,
+				s->host.sock,
+				EV_READ);
+			ev_io_start(s->loop, &s->client.io);
+			ev_io_start(s->loop, &s->host.io);
+			return;
 		case SHUTDOWN:
+			log_msg(LOG, __FILE__, __LINE__, "Session killed.\n");
 			delete_session(s);
 			return;
 	}

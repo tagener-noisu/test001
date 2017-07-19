@@ -45,7 +45,6 @@ void socks_resp_cb(struct ev_loop *loop, ev_io *w, int revents) {
 	int stat;
 	client *c = (client *) w;
 	session *s = c->session;
-	host *h = &s->host;
 	struct socks_reply reply = *(struct socks_reply *)s->data;
 
 	free(s->data);
@@ -55,12 +54,7 @@ void socks_resp_cb(struct ev_loop *loop, ev_io *w, int revents) {
 	if (stat != -1) {
 		log_msg(LOG,
 			__FILE__, __LINE__, "SOCKS RESPONSE sent\n");
-		ev_io_stop(loop, &c->io);
-		ev_io_stop(loop, &c->io);
-		ev_io_init(&c->io, client_to_host_cb, c->sock, EV_READ);
-		ev_io_init(&h->io, host_to_client_cb, h->sock, EV_READ);
-		ev_io_start(loop, &c->io);
-		ev_io_start(loop, &h->io);
+		session_set_state(s, SOCKS_COMM);
 		return;
 	}
 	else if (errno == EAGAIN) {
@@ -146,7 +140,6 @@ void socks_request_cb(struct ev_loop *loop, ev_io *w, int revents) {
 	if (stat == -1)
 		log_errno(__FILE__, __LINE__, errno);
 
-	log_msg(LOG, __FILE__, __LINE__, "Connection closed.\n");
 	session_set_state(s, SHUTDOWN);
 }
 
