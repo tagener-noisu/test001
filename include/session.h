@@ -18,16 +18,23 @@ struct context {
 	struct sockaddr_storage addr;
 	struct session *session;
 };
+
+struct host_context {
+	ev_io io;
+	int sock;
+	struct sockaddr_storage addr;
+	struct session *session;
+	int status;
+};
 typedef struct context client;
-typedef struct context host;
+typedef struct host_context host;
 
 typedef struct session {
 	ev_cleanup cleanup;
-	struct context client;
-	struct context host;
+	client client;
+	host host;
 	struct ev_loop *loop;
 	enum s_state state;
-	void *data;
 } session;
 
 session * session_new();

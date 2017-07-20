@@ -45,10 +45,13 @@ void socks_resp_cb(struct ev_loop *loop, ev_io *w, int revents) {
 	int stat;
 	client *c = (client *) w;
 	session *s = c->session;
-	struct socks_reply reply = *(struct socks_reply *)s->data;
+	struct sockaddr_in *addr = (struct sockaddr_in*) &s->host.addr;
 
-	free(s->data);
-	s->data = NULL;
+	struct socks_reply reply;
+	reply.ver = 0;
+	reply.stat = s->host.status;
+	reply.port = addr->sin_port;
+	reply.ipv4 = addr->sin_addr.s_addr;
 
 	stat = send(c->sock, &reply, sizeof(struct socks_reply), 0);
 	if (stat != -1) {
@@ -70,23 +73,15 @@ void connect_to_host(session *s, struct ev_loop *loop) {
 
 	if (sock != -1) {
 		int stat;
-		struct sockaddr_in * addr =
-			(struct sockaddr_in *) &s->host.addr;
-
-		struct socks_reply *repl = malloc(sizeof(struct socks_reply));
-		repl->ver = 0;
-		repl->stat = REJECTED;
-		repl->port = addr->sin_port;
-		repl->ipv4 = addr->sin_addr.s_addr;
-		s->data = repl;
+		s->host.status = REJECTED;
 
 		stat = connect(
 			sock,
-			(struct sockaddr *) addr,
-			sizeof(struct sockaddr_in));
+			(struct sockaddr *) &s->host.addr,
+			sizeof(s->host.addr));
 
 		if (stat == 0)
-			repl->stat = GRANTED;
+			s->host.status = GRANTED;
 		else if (stat == -1)
 			log_errno(__FILE__, __LINE__, errno);
 
@@ -106,21 +101,29 @@ void socks_request_cb(struct ev_loop *loop, ev_io *w, int revents) {
 	client *c = (client *) w;
 	session *s = c->session;
 
-	stat = recv(c->sock, &r, sizeof(r), 0);
-	if (stat == -1 && errno == EAGAIN)
+	stat = recv(c->sock, &r, sizeof(r), MSG_PEEK);
+	if (stat < sizeof(r)) {
+		if (stat == -1 || stat == 0) {
+			if (stat == -1 && errno == EAGAIN)
+				return;
+			else
+				session_set_state(s, SHUTDOWN);
+		}
 		return;
+	}
+	stat = recv(c->sock, &r, sizeof(r), MSG_WAITALL);
 
 	if (stat != -1 && r.ver == 4) {
-		char userid[SMALL_BUF];
+		char userid[SMALL_BUF + 1];
 
 		stat = blocking_recv(c->sock, userid, sizeof(userid), MSG_PEEK);
 		if (stat != -1) {
-			int id_len = strlen(userid);
-			blocking_recv(c->sock, userid, id_len + 1, MSG_WAITALL);
+			int sz = strlen(userid);
+			blocking_recv(c->sock, userid, sz + 1, MSG_WAITALL);
 			struct sockaddr_in *host =
 				(struct sockaddr_in *) &s->host.addr;
 
-			userid[stat - 1] = '\0';
+			userid[stat] = '\0';
 
 			memset(host, 0, sizeof(struct sockaddr_in));
 			host->sin_family = AF_INET;
