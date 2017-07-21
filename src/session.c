@@ -4,6 +4,7 @@
 #include "callbacks.h"
 #include "log.h"
 //-------------------------------------------------------------------
+#define SESSION_TIMEOUT 15.
 
 void session_cleanup(struct ev_loop *l, ev_cleanup *c, int e);
 
@@ -14,6 +15,10 @@ session * session_new(struct ev_loop *loop) {
 	s->loop = loop;
 	ev_cleanup_init(&s->cleanup, session_cleanup);
 	ev_cleanup_start(s->loop, &s->cleanup);
+
+	ev_init(&s->timer, session_timeout_cb);
+	s->timer.data = s;
+	s->timer.repeat = SESSION_TIMEOUT;
 
 	s->client.session = s;
 	s->host.session = s;
@@ -26,6 +31,7 @@ void session_cleanup(struct ev_loop * l, ev_cleanup *c, int e) {
 }
 
 void delete_session(session * s) {
+	ev_timer_stop(s->loop, &s->timer);
 	ev_cleanup_stop(s->loop, &s->cleanup);
 	ev_io_stop(s->loop, &s->client.io);
 	ev_io_stop(s->loop, &s->host.io);
@@ -35,11 +41,15 @@ void delete_session(session * s) {
 }
 
 void session_set_state(session *s, int state) {
+	ev_timer_again(s->loop, &s->timer);
+	if (s->state == state)
+		return;
+
+	s->state = state;
 	switch (state) {
 		case IDLE:
 			return;
 		case SOCKS_REQ:
-			s->state = state;
 			ev_io_stop(s->loop, &s->client.io);
 			ev_io_init(
 				&s->client.io,

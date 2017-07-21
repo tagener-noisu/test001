@@ -31,6 +31,7 @@ typedef struct host_context host;
 
 typedef struct session {
 	ev_cleanup cleanup;
+	ev_timer timer;
 	client client;
 	host host;
 	struct ev_loop *loop;
