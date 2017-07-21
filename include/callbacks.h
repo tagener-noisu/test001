@@ -15,4 +15,6 @@ void client_to_host_cb(struct ev_loop *loop, ev_io *w, int revents);
 
 void host_to_client_cb(struct ev_loop *loop, ev_io *w, int revents);
 
+void session_timeout_cb(struct ev_loop *loop, ev_timer *w, int revents);
+
 //-------------------------------------------------------------------

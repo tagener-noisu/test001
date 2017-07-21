@@ -9,6 +9,12 @@
 #include "session.h"
 //-------------------------------------------------------------------
 
+void session_timeout_cb(struct ev_loop *loop, ev_timer *w, int revents) {
+	log_msg(LOG,
+		__FILE__, __LINE__, "Session timed out\n");
+	session_set_state((session *) w->data, SHUTDOWN);
+}
+
 void host_to_client_cb(struct ev_loop *loop, ev_io *w, int revents) {
 	int stat;
 	host *h = (host *) w;
