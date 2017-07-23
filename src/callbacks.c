@@ -126,19 +126,19 @@ void socks_request_cb(struct ev_loop *loop, ev_io *w, int revents) {
 		if (stat != -1) {
 			int sz = strlen(userid);
 			blocking_recv(c->sock, userid, sz + 1, MSG_WAITALL);
-			struct sockaddr_in *host =
+			struct sockaddr_in *haddr =
 				(struct sockaddr_in *) &s->host.addr;
 
 			userid[stat] = '\0';
 
-			memset(host, 0, sizeof(struct sockaddr_in));
-			host->sin_family = AF_INET;
-			host->sin_addr.s_addr = r.ipv4;
-			host->sin_port = r.port;
+			memset(haddr, 0, sizeof(struct sockaddr_in));
+			haddr->sin_family = AF_INET;
+			haddr->sin_addr.s_addr = r.ipv4;
+			haddr->sin_port = r.port;
 
 			log_msg(LOG, __FILE__, __LINE__,
 				"SOCKS REQUEST(%x), host: ", r.comm);
-			print_addr(stderr, AF_INET, host);
+			print_addr(stderr, AF_INET, haddr);
 			fprintf(stderr, ", from: %s\n", userid);
 
 			connect_to_host(s, loop);
