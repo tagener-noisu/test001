@@ -83,6 +83,15 @@ void session_set_state(session *s, int state) {
 			ev_io_start(s->loop, &s->client.io);
 			ev_io_start(s->loop, &s->host.io);
 			return;
+		case SOCKS_HOSTCONN:
+			ev_io_stop(s->loop, &s->client.io);
+			ev_io_init(
+				&s->host.io,
+				connect_to_host_cb,
+				s->host.sock,
+				EV_WRITE);
+			ev_io_start(s->loop, &s->host.io);
+			return;
 		case SHUTDOWN:
 			log_msg(LOG, __FILE__, __LINE__, "Session killed.\n");
 			delete_session(s);

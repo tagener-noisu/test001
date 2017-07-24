@@ -9,6 +9,7 @@ enum s_state {
 	SOCKS_REQ,
 	SOCKS_RESP,
 	SOCKS_COMM,
+	SOCKS_HOSTCONN,
 	SHUTDOWN
 };
 
