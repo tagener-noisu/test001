@@ -64,7 +64,8 @@ void socks_resp_cb(struct ev_loop *loop, ev_io *w, int revents) {
 		log_msg(LOG,
 			__FILE__, __LINE__, "SOCKS RESPONSE sent\n");
 		session_set_state(s, SOCKS_COMM);
-		return;
+		if (s->host.status == GRANTED)
+			return;
 	}
 	else if (errno == EAGAIN) {
 		return;
