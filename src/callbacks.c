@@ -73,6 +73,13 @@ void socks_resp_cb(struct ev_loop *loop, ev_io *w, int revents) {
 	session_set_state(s, SHUTDOWN);
 }
 
+void connect_to_host_cb(struct ev_loop *loop, ev_io *w, int revents) {
+	host *h = (host *) w;
+	log_msg(LOG, __FILE__, __LINE__,
+		"Connect to host!\n");
+	session_set_state(h->session, SHUTDOWN);
+}
+
 void connect_to_host(session *s, struct ev_loop *loop) {
 	int sock = socket(AF_INET, SOCK_STREAM, 0);
 	s->host.sock = sock;
@@ -141,7 +148,29 @@ void socks_request_cb(struct ev_loop *loop, ev_io *w, int revents) {
 			print_addr(stderr, AF_INET, haddr);
 			fprintf(stderr, ", from: %s\n", userid);
 
-			connect_to_host(s, loop);
+			s->host.sock = socket(AF_INET, SOCK_STREAM, 0);
+			if (s->host.sock == -1) {
+				log_errno(__FILE__, __LINE__, errno);
+				session_set_state(s, SHUTDOWN);
+				return;
+			}
+			setnonblock(s->host.sock);
+
+			stat = connect(
+				s->host.sock,
+				(struct sockaddr *) haddr,
+				sizeof(s->host.addr));
+
+			if (stat == 0)
+				session_set_state(s, SOCKS_RESP);
+			else if (stat == -1) {
+				if (errno == EINPROGRESS) {
+					session_set_state(s, SOCKS_HOSTCONN);
+					return;
+				}
+				log_errno(__FILE__, __LINE__, errno);
+				session_set_state(s, SHUTDOWN);
+			}
 			return;
 		}
 	}
