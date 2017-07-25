@@ -74,38 +74,23 @@ void socks_resp_cb(struct ev_loop *loop, ev_io *w, int revents) {
 }
 
 void connect_to_host_cb(struct ev_loop *loop, ev_io *w, int revents) {
+	int stat;
+	int conn_stat = REJECTED;
 	host *h = (host *) w;
-	log_msg(LOG, __FILE__, __LINE__,
-		"Connect to host!\n");
-	session_set_state(h->session, SHUTDOWN);
-}
 
-void connect_to_host(session *s, struct ev_loop *loop) {
-	int sock = socket(AF_INET, SOCK_STREAM, 0);
-	s->host.sock = sock;
+	stat = connect(
+		h->sock,
+		(struct sockaddr *) &h->addr,
+		sizeof(h->addr));
 
-	if (sock != -1) {
-		int stat;
-		s->host.status = REJECTED;
+	if (stat == 0)
+		conn_stat = GRANTED;
 
-		stat = connect(
-			sock,
-			(struct sockaddr *) &s->host.addr,
-			sizeof(s->host.addr));
+	if (stat == -1 && errno == EALREADY)
+		return;
 
-		if (stat == 0)
-			s->host.status = GRANTED;
-		else if (stat == -1)
-			log_errno(__FILE__, __LINE__, errno);
-
-		setnonblock(sock);
-		session_set_state(s, SOCKS_RESP);
-
-		if (stat != -1)
-			return;
-	}
-
-	session_set_state(s, SHUTDOWN);
+	h->status = conn_stat;
+	session_set_state(h->session, SOCKS_RESP);
 }
 
 void socks_request_cb(struct ev_loop *loop, ev_io *w, int revents) {
