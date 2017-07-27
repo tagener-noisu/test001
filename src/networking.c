@@ -48,7 +48,7 @@ int send_data(int from, int to) {
 	int recvd = recv(from, buf, sizeof(buf), MSG_PEEK);
 
 	if (recvd > 0) {
-		int sent = send(to, buf, recvd, 0);
+		int sent = send(to, buf, recvd, MSG_NOSIGNAL);
 		if (sent != -1)
 			recv(from, buf, sent, MSG_WAITALL);
 		else
