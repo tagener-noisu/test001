@@ -58,4 +58,19 @@ int send_data(int from, int to) {
 	return recvd;
 }
 
+int nonblock_recv(int sock, void *buf, size_t sz, int fl) {
+	int stat;
+	stat = recv(sock, buf, sz, MSG_PEEK);
+	if (stat < sz) {
+		if (stat == 0)
+			errno = ENODATA;
+		if (stat > 0)
+			errno = EAGAIN;
+
+		return -1;
+	}
+	stat = recv(sock, buf, sz, 0);
+	return 0;
+}
+
 //-------------------------------------------------------------------

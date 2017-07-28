@@ -27,4 +27,6 @@ int blocking_recv(int sock, void *buf, size_t sz, int flags);
 
 int send_data(int from, int to);
 
+int nonblock_recv(int sock, void *buf, size_t sz, int fl);
+
 //-------------------------------------------------------------------
