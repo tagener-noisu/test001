@@ -21,11 +21,11 @@ struct socks_reply {
 	uint32_t ipv4;
 };
 
-struct socks_request {
+struct socks4_request {
 	uint8_t ver;
 	uint8_t comm;
 	uint16_t port;
-	uint32_t ipv4;
+	uint32_t ip;
 };
 
 //-------------------------------------------------------------------
