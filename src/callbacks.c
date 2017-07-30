@@ -10,7 +10,7 @@
 //-------------------------------------------------------------------
 
 void session_timeout_cb(struct ev_loop *loop, ev_timer *w, int revents) {
-	log_msg(LOG,
+	log_msg(LOG_WARNING,
 		__FILE__, __LINE__, "Session timed out\n");
 	session_set_state((session *) w->data, SHUTDOWN);
 }
@@ -94,75 +94,35 @@ void connect_to_host_cb(struct ev_loop *loop, ev_io *w, int revents) {
 	session_set_state(h->session, SOCKS_RESP);
 }
 
-void socks_request_cb(struct ev_loop *loop, ev_io *w, int revents) {
+void socks4_req_header_cb(struct ev_loop *loop, ev_io *w, int revents) {
 	int stat;
-	struct socks_request r;
 	client *c = (client *) w;
 	session *s = c->session;
+	struct socks4_request r;
 
-	stat = recv(c->sock, &r, sizeof(r), MSG_PEEK);
-	if (stat < sizeof(r)) {
-		if (stat == -1 || stat == 0) {
-			if (stat == -1 && errno == EAGAIN)
-				return;
-			else
-				session_set_state(s, SHUTDOWN);
+	stat = nonblock_recv(c->sock, &r, sizeof(r), 0);
+	if (stat == -1) {
+		if (errno == ENODATA)
+			session_set_state(s, SHUTDOWN);
+		else if (errno != EAGAIN) {
+			log_errno(__FILE__, __LINE__, errno);
+			session_set_state(s, SHUTDOWN);
 		}
 		return;
 	}
-	stat = recv(c->sock, &r, sizeof(r), MSG_WAITALL);
 
-	if (stat != -1 && r.ver == 4) {
-		char userid[SMALL_BUF + 1];
+	if (r.ver == 4) {
+		struct sockaddr_in *haddr = (struct sockaddr_in *)&s->host.addr;
+		haddr->sin_family = AF_INET;
+		haddr->sin_addr.s_addr = r.ip;
+		haddr->sin_port = r.port;
 
-		stat = blocking_recv(c->sock, userid, sizeof(userid), MSG_PEEK);
-		if (stat != -1) {
-			int sz = strlen(userid);
-			blocking_recv(c->sock, userid, sz + 1, MSG_WAITALL);
-			struct sockaddr_in *haddr =
-				(struct sockaddr_in *) &s->host.addr;
+		log_msg(LOG, __FILE__, __LINE__,
+			"SOCKS request(%x), host: ", r.comm);
+		print_addr(stderr, AF_INET, haddr);
+		fprintf(stderr, "\n");
 
-			userid[stat] = '\0';
-
-			memset(haddr, 0, sizeof(struct sockaddr_in));
-			haddr->sin_family = AF_INET;
-			haddr->sin_addr.s_addr = r.ipv4;
-			haddr->sin_port = r.port;
-
-			log_msg(LOG, __FILE__, __LINE__,
-				"SOCKS REQUEST(%x), host: ", r.comm);
-			print_addr(stderr, AF_INET, haddr);
-			fprintf(stderr, ", from: %s\n", userid);
-
-			s->host.sock = socket(AF_INET, SOCK_STREAM, 0);
-			if (s->host.sock == -1) {
-				log_errno(__FILE__, __LINE__, errno);
-				session_set_state(s, SHUTDOWN);
-				return;
-			}
-			setnonblock(s->host.sock);
-
-			stat = connect(
-				s->host.sock,
-				(struct sockaddr *) haddr,
-				sizeof(s->host.addr));
-
-			if (stat == 0)
-				session_set_state(s, SOCKS_RESP);
-			else if (stat == -1) {
-				if (errno == EINPROGRESS) {
-					session_set_state(s, SOCKS_HOSTCONN);
-					return;
-				}
-				log_errno(__FILE__, __LINE__, errno);
-				session_set_state(s, SHUTDOWN);
-			}
-			return;
-		}
 	}
-
-	if (stat == -1)
-		log_errno(__FILE__, __LINE__, errno);
 
 	session_set_state(s, SHUTDOWN);
 }
@@ -184,7 +144,7 @@ void accept_cb (struct ev_loop *loop, ev_io *w, int revents) {
 		s->client.sock = client.sock;
 		s->client.addr = client.addr;
 
-		session_set_state(s, SOCKS_REQ);
+		session_set_state(s, SOCKS_REQ_HEADER);
 
 		log_msg(LOG, __FILE__, __LINE__, "Connection from: ");
 		print_addr(stderr, s->client.addr.ss_family, &s->client.addr);
