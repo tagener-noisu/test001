@@ -49,11 +49,11 @@ void session_set_state(session *s, int state) {
 	switch (state) {
 		case IDLE:
 			return;
-		case SOCKS_REQ:
+		case SOCKS_REQ_HEADER:
 			ev_io_stop(s->loop, &s->client.io);
 			ev_io_init(
 				&s->client.io,
-				socks_request_cb,
+				socks4_req_header_cb,
 				s->client.sock,
 				EV_READ);
 			ev_io_start(s->loop, &s->client.io);
